@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EMBU - Hospital Map</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<style>
+
+body{
+    margin:0;
+    font-family:Poppins;
+    background: radial-gradient(circle at center, #121212 0%, #0f1115 100%);
+    color:white;
+    overflow-x:hidden;
+}
+
+.circle1,.circle2{
+    position:absolute;
+    border-radius:50%;
+    filter:blur(85px);
+    z-index:0;
+}
+
+.circle1{
+    width:320px;
+    height:320px;
+    background:#ff3b30;
+    top:-100px;
+    left:-100px;
+    opacity:0.7;
+}
+
+.circle2{
+    width:300px;
+    height:300px;
+    background:#7a0000;
+    bottom:-100px;
+    right:-100px;
+    opacity:0.6;
+}
+
+.container{
+    position:relative;
+    z-index:1;
+    padding:20px;
+}
+
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.logo{
+    font-size:20px;
+    font-weight:700;
+}
+
+.status{
+    background:#00c853;
+    padding:6px 12px;
+    border-radius:20px;
+    font-size:12px;
+}
+
+.homeBtn{
+    padding:6px 12px;
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,0.2);
+    background:rgba(255,255,255,0.05);
+    color:white;
+    cursor:pointer;
+}
+
+.card{
+    margin-top:15px;
+    padding:20px;
+    border-radius:25px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.1);
+    backdrop-filter:blur(20px);
+}
+
+.big{
+    font-size:18px;
+    font-weight:600;
+    margin-bottom:10px;
+}
+
+#map{
+    width:100%;
+    height:260px;
+    border-radius:20px;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border:none;
+    border-radius:12px;
+    color:white;
+    cursor:pointer;
+    font-weight:600;
+    transition:0.3s;
+}
+
+button:hover{
+    transform:translateY(-3px);
+}
+
+.gmap{ background:#ff3b30; }
+.complete{ background:#00c853; }
+
+</style>
+</head>
+
+<body>
+
+<div class="circle1"></div>
+<div class="circle2"></div>
+
+<div class="container">
+
+<!-- HEADER -->
+<div class="header">
+<div class="logo">🏥 Hospital Route</div>
+<div class="status">LIVE</div>
+<button class="homeBtn" onclick="goBack()">🚑 Back</button>
+</div>
+
+<!-- MAP -->
+<div class="card">
+<div class="big">Nearest Hospital Navigation</div>
+<div id="map"></div>
+
+<button class="gmap" onclick="openGoogleMaps()">
+🗺️ Open in Google Maps
+</button>
+
+<button class="complete" onclick="finishTask()">
+✔ Task Completed
+</button>
+
+</div>
+
+</div>
+
+<script>
+   
+let map;
+let userMarker;
+let hospitalMarker;
+let routeLine;
+let selectedHospital = null;
+
+//////////////////////////////////////////////////////
+// 🚑 DISTANCE
+//////////////////////////////////////////////////////
+
+function getDistance(lat1, lon1, lat2, lon2){
+
+const R = 6371;
+
+const dLat = (lat2-lat1) * Math.PI/180;
+const dLon = (lon2-lon1) * Math.PI/180;
+
+const a =
+Math.sin(dLat/2)**2 +
+Math.cos(lat1*Math.PI/180) *
+Math.cos(lat2*Math.PI/180) *
+Math.sin(dLon/2)**2;
+
+return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+//////////////////////////////////////////////////////
+// 🏥 REAL NEAREST HOSPITAL (OSM)
+//////////////////////////////////////////////////////
+
+async function getNearestHospital(lat, lng){
+
+let query = `
+[out:json];
+node["amenity"="hospital"](around:7000,${lat},${lng});
+out;
+`;
+
+let url = "https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(query);
+
+let res = await fetch(url);
+let data = await res.json();
+
+if(!data.elements || data.elements.length === 0){
+    alert("No hospitals found nearby");
+    return null;
+}
+
+let nearest = null;
+let min = Infinity;
+
+data.elements.forEach(h => {
+
+let d = getDistance(lat,lng,h.lat,h.lon);
+
+if(d < min){
+    min = d;
+    nearest = h;
+}
+
+});
+
+return nearest;
+
+}
+
+//////////////////////////////////////////////////////
+// 🚑 INIT MAP
+//////////////////////////////////////////////////////
+
+function initMap(){
+
+map = L.map('map').setView([30.0444,31.2357],13);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'&copy; OpenStreetMap'
+}).addTo(map);
+
+navigator.geolocation.getCurrentPosition(async pos => {
+
+let userPos = {
+    lat: pos.coords.latitude,
+    lng: pos.coords.longitude
+};
+
+// 🚑 user marker
+userMarker = L.marker([userPos.lat,userPos.lng])
+.addTo(map)
+.bindPopup("🚑 You")
+.openPopup();
+
+// 🏥 nearest hospital
+let hospital = await getNearestHospital(userPos.lat,userPos.lng);
+
+if(!hospital) return;
+
+selectedHospital = hospital;
+
+// marker
+hospitalMarker = L.marker([hospital.lat,hospital.lon])
+.addTo(map)
+.bindPopup("🏥 " + (hospital.tags?.name || "Hospital"))
+.openPopup();
+
+// route line (simple)
+routeLine = L.polyline([
+    [userPos.lat,userPos.lng],
+    [hospital.lat,hospital.lon]
+],{
+    color:"green",
+    weight:5
+}).addTo(map);
+
+map.setView([userPos.lat,userPos.lng],13);
+
+});
+
+}
+
+//////////////////////////////////////////////////////
+// 🗺️ GOOGLE MAPS
+//////////////////////////////////////////////////////
+
+function openGoogleMaps(){
+
+if(!selectedHospital) return;
+
+window.open(
+`https://www.google.com/maps/dir/?api=1&destination=${selectedHospital.lat},${selectedHospital.lon}`,
+"_blank"
+);
+
+}
+
+//////////////////////////////////////////////////////
+// 🔙 BACK
+//////////////////////////////////////////////////////
+
+function goBack(){
+window.location.href = "driver-map.html";
+}
+
+//////////////////////////////////////////////////////
+// ✔ FINISH
+//////////////////////////////////////////////////////
+
+function finishTask(){
+localStorage.removeItem("embo_driver_current");
+window.location.href = "driver-home.html";
+}
+
+window.onload = initMap;
+
+</script>
+
+</body>
+</html>ه

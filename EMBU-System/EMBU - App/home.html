@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EMBU - Home</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- ===== SIDEBAR ===== -->
+    <div class="sidebar">
+        <h2>🚑 EMBU</h2>
+
+        <a href="home.html" class="active">Home</a>
+        
+        <a href="contacts.html">Contacts</a>
+        <a href="profile.html">Profile</a>
+        <a href="settings.html">Settings</a>
+    </div>
+
+    <!-- ===== MAIN ===== -->
+    <div class="main">
+
+        <!-- Welcome -->
+        <div class="card">
+            <h2>👋 Welcome</h2>
+            <p id="user">Loading user...</p>
+        </div>
+
+        <!-- ===== DASHBOARD STATS (CARDS) ===== -->
+        <div class="card">
+            <h3>📈 Dashboard</h3>
+
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:15px;margin-top:15px;">
+
+                <div class="card" style="text-align:center;">
+                    <h2 id="totalRequests">0</h2>
+                    <p>🚑 Requests</p>
+                </div>
+
+                <div class="card" style="text-align:center;">
+                    <h2 id="hospitalCount">...</h2>
+                    <p>🏥 Hospitals Nearby</p>
+                </div>
+
+                <div class="card" style="text-align:center;">
+                    <h2 class="online">✔</h2>
+                    <p>📍 GPS</p>
+                </div>
+
+                <div class="card" style="text-align:center;">
+                    <h2 class="online">ON</h2>
+                    <p>🚨 System</p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+
+            <h3>🚑 Quick Actions</h3>
+
+            <button class="btn" onclick="goRequest()">🚑 Request Ambulance</button>
+            <button class="btn" onclick="goLiveMap()">🚑 Live Map</button>
+            <button class="btn" onclick="goContacts()">📞 Emergency Contacts</button>
+
+        </div>
+
+        <!-- Last Emergency -->
+        <div class="card">
+
+            <h3>📋 Last Emergency</h3>
+
+            <div id="lastEmergency">
+                No requests yet
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+/////////////////////////////////////////////////////
+// USER
+/////////////////////////////////////////////////////
+let user = JSON.parse(localStorage.getItem("embo_user"));
+
+if(user){
+    document.getElementById("user").innerHTML =
+        "👋 Hello, " + user.name;
+} else {
+    document.getElementById("user").innerHTML =
+        "👋 Hello Guest";
+}
+
+
+/////////////////////////////////////////////////////
+// REQUESTS COUNT
+/////////////////////////////////////////////////////
+
+let requests =
+JSON.parse(localStorage.getItem("embo_requests")) || [];
+
+document.getElementById("totalRequests").innerHTML =
+requests.length;
+
+/////////////////////////////////////////////////////
+// LAST REQUEST
+/////////////////////////////////////////////////////
+
+if(requests.length > 0){
+
+    let last = requests[requests.length - 1];
+
+    document.getElementById("lastEmergency").innerHTML = `
+        <p>🚑 Type: ${last.type}</p>
+        <p>⏰ Time: ${last.time}</p>
+        <p>📡 Status: ${last.status}</p>
+    `;
+}
+
+/////////////////////////////////////////////////////
+// NEARBY HOSPITALS
+/////////////////////////////////////////////////////
+
+navigator.geolocation.getCurrentPosition(async function(pos){
+
+    let lat = pos.coords.latitude;
+    let lng = pos.coords.longitude;
+
+    let query = `
+    [out:json];
+    node["amenity"="hospital"](around:7000,${lat},${lng});
+    out;
+    `;
+
+    let url =
+    "https://overpass-api.de/api/interpreter?data=" +
+    encodeURIComponent(query);
+
+    try{
+
+        let res = await fetch(url);
+        let data = await res.json();
+
+        document.getElementById("hospitalCount").innerHTML =
+        data.elements.length;
+
+    }
+    catch{
+
+        document.getElementById("hospitalCount").innerHTML =
+        "0";
+
+    }
+
+});
+
+/////////////////////////////////////////////////////
+// NAVIGATION
+/////////////////////////////////////////////////////
+
+function goRequest(){
+    window.location.href = "request.html";
+}
+
+function goLiveMap(){
+    window.location.href = "livemap.html";
+}
+
+function goContacts(){
+    window.location.href = "contacts.html";
+}
+
+</script>
+
+</body>
+</html>
+```

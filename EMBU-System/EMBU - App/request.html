@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EMBU - Request</title>
+    <link rel="stylesheet" href="style.css">
+
+    <script>
+        // حماية تسجيل الدخول
+        if(localStorage.getItem("embo_logged") !== "true"){
+            window.location.href = "login.html";
+        }
+    </script>
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <h2>🚑 EMBU</h2>
+
+        <a href="home.html">Home</a>
+        <a href="contacts.html">Contacts</a>
+        <a href="profile.html">Profile</a>
+        <a href="settings.html">Settings</a>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+        <div class="card">
+            <h2>🚑 Emergency Request</h2>
+            <p>Select case type</p>
+
+            <select id="type">
+                <option value="Accident">🚑 Accident</option>
+                <option value="Heart Attack">❤️ Heart Attack</option>
+                <option value="Fire or Explosion">🔥 Fire / Explosion</option>
+                <option value="Breathing Issue">🫁 Breathing Issue</option>
+                <option value="Other">⚠️ Other</option>
+            </select>
+
+            <button class="btn" onclick="sendRequest()">
+                🚑 Send Request
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+function sendRequest(){
+
+    let type = document.getElementById("type").value;
+
+    navigator.geolocation.getCurrentPosition((pos)=>{
+
+        // 👤 get user data from register
+        let user = JSON.parse(localStorage.getItem("embo_user"));
+
+        // 📦 get old requests
+        let requests = JSON.parse(localStorage.getItem("embo_requests")) || [];
+
+        // 🚑 new request object
+        let newRequest = {
+            id: Date.now(),
+
+            type: type,
+
+            // 👇 user real data
+            name: user ? user.name : "Unknown",
+            phone: user ? user.phone : "Unknown",
+
+            condition: "Unknown",
+            address: "Current Location",
+            severity: "Medium",
+
+            time: new Date().toLocaleString(),
+            status: "Searching 🚑",
+
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude
+        };
+
+        // ➕ add request
+        requests.push(newRequest);
+
+        // 💾 save
+        localStorage.setItem("embo_requests", JSON.stringify(requests));
+        localStorage.setItem("embo_current_request", JSON.stringify(newRequest));
+
+        alert("🚑 Request Sent Successfully");
+
+        // 🔁 go to map
+        window.location.href = "map.html";
+
+    }, ()=>{
+
+        alert("GPS permission denied ❌");
+
+    });
+
+}
+
+</script>
+
+</body>
+</html>

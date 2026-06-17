@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EMBU - Profile</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- 🔐 حماية الصفحة -->
+    <script>
+        if(localStorage.getItem("embo_logged") !== "true"){
+            window.location.href = "login.html";
+        }
+    </script>
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <h2>🚑 EMBU</h2>
+
+        <a href="home.html">Home</a>
+
+        <a href="contacts.html">Contacts</a>
+        <a href="profile.html" class="active">Profile</a>
+        <a href="settings.html">Settings</a>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+        <!-- PROFILE HEADER -->
+        <div class="card">
+            <h2>👤 Profile</h2>
+            <p>Your personal information</p>
+        </div>
+
+        <!-- USER INFO BOXES -->
+        <div class="card">
+            <h3>📧 Email</h3>
+            <div id="email">Loading...</div>
+        </div>
+
+        <div class="card">
+            <h3>📱 Phone</h3>
+            <div id="phone">Loading...</div>
+        </div>
+
+        <!-- HISTORY -->
+        <div class="card">
+            <h3>📊 Emergency History</h3>
+            <div id="history"></div>
+        </div>
+
+        <!-- LOGOUT -->
+        <div class="card">
+            <button class="btn" onclick="logout()">🚪 Logout</button>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+/////////////////////////////////////////////////////
+// 👤 LOAD USER DATA (FIXED)
+/////////////////////////////////////////////////////
+
+let user = JSON.parse(localStorage.getItem("embo_user"));
+
+if(user){
+
+    document.getElementById("email").innerText = user.email || "Not found";
+    document.getElementById("phone").innerText = user.phone || "Not found";
+
+} else {
+
+    document.getElementById("email").innerText = "No user found";
+    document.getElementById("phone").innerText = "No user found";
+}
+
+/////////////////////////////////////////////////////
+// 📊 HISTORY
+/////////////////////////////////////////////////////
+
+function loadHistory(){
+
+    let requests = JSON.parse(localStorage.getItem("embo_requests")) || [];
+
+    let historyDiv = document.getElementById("history");
+
+    historyDiv.innerHTML = "";
+
+    if(requests.length === 0){
+        historyDiv.innerHTML = "<p>No emergency requests yet</p>";
+        return;
+    }
+
+    requests.slice().reverse().forEach(req => {
+
+        historyDiv.innerHTML += `
+            <div style="
+                background:#0f1115;
+                padding:12px;
+                margin-top:10px;
+                border-radius:12px;
+                border:1px solid #2a2f3a;
+            ">
+                <p>🚑 Type: ${req.type}</p>
+                <p>⏰ Time: ${req.time}</p>
+                <p>📡 Status: ${req.status}</p>
+
+                <button class="btn" onclick="cancelRequest(${req.id})">
+                    ❌ Cancel
+                </button>
+            </div>
+        `;
+    });
+}
+
+function cancelRequest(id){
+
+    let requests = JSON.parse(localStorage.getItem("embo_requests")) || [];
+
+    requests = requests.filter(r => r.id !== id);
+
+    localStorage.setItem("embo_requests", JSON.stringify(requests));
+
+    alert("Request Cancelled ❌");
+
+    loadHistory();
+}
+
+setInterval(loadHistory, 2000);
+loadHistory();
+
+/////////////////////////////////////////////////////
+// 🚪 LOGOUT
+/////////////////////////////////////////////////////
+
+function logout(){
+
+    localStorage.removeItem("embo_logged");
+    localStorage.removeItem("embo_user");
+    localStorage.removeItem("embo_current_request");
+
+    alert("Logged out ✔");
+
+    window.location.href = "login.html";
+}
+
+
+</script>
+
+</body>
+</html>

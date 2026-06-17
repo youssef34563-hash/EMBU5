@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EMBU - Driver Home</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+body{
+    margin:0;
+    font-family:Poppins;
+    background: radial-gradient(circle at center, #121212 0%, #0f1115 100%);
+    color:white;
+}
+
+.circle1,.circle2{
+    position:absolute;
+    border-radius:50%;
+    filter:blur(85px);
+    z-index:0;
+}
+
+.circle1{
+    width:320px;
+    height:320px;
+    background:#ff3b30;
+    top:-100px;
+    left:-100px;
+}
+
+.circle2{
+    width:300px;
+    height:300px;
+    background:#7a0000;
+    bottom:-100px;
+    right:-100px;
+}
+
+.container{
+    position:relative;
+    z-index:1;
+    padding:20px;
+}
+
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.logo{
+    font-size:20px;
+    font-weight:700;
+}
+
+.status{
+    background:#00c853;
+    padding:6px 12px;
+    border-radius:20px;
+    font-size:12px;
+}
+
+.card{
+    margin-top:15px;
+    padding:20px;
+    border-radius:25px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.1);
+    backdrop-filter:blur(20px);
+}
+
+.alert{
+    border-left:4px solid #ff3b30;
+}
+
+.big{
+    font-size:18px;
+    font-weight:600;
+}
+
+.info{
+    color:#ccc;
+    font-size:14px;
+    margin-top:6px;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border:none;
+    border-radius:12px;
+    background:#ff3b30;
+    color:white;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+button:hover{
+    transform:translateY(-3px);
+    box-shadow:0 10px 25px rgba(255,59,48,0.4);
+}
+
+.secondary{
+    background:transparent;
+    border:1px solid rgba(255,255,255,0.2);
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="circle1"></div>
+<div class="circle2"></div>
+
+<div class="container">
+
+<div class="header">
+<div class="logo">🚑 DRIVER DASHBOARD</div>
+<div class="status">LIVE</div>
+</div>
+
+<div id="requests"></div>
+
+</div>
+
+<script>
+
+/////////////////////////////////////////////////////
+// 🚑 LOAD REQUESTS (NEWEST FIRST)
+/////////////////////////////////////////////////////
+
+function loadRequests(){
+
+let requests = JSON.parse(localStorage.getItem("embo_requests")) || [];
+
+// 🔥 FIX: newest request on top
+requests.sort((a, b) => b.id - a.id);
+
+let container = document.getElementById("requests");
+container.innerHTML = "";
+
+requests.forEach(req => {
+
+container.innerHTML += `
+<div class="card alert">
+
+    <div class="big">🚨 Emergency Request</div>
+
+    <div class="info">🚑 Type: ${req.type}</div>
+    <div class="info">👤 Name: ${req.name}</div>
+    <div class="info">📞 Phone: ${req.phone}</div>
+    <div class="info">❤️ Condition: ${req.condition}</div>
+    <div class="info">📍 Address: ${req.address}</div>
+    <div class="info">⏰ Time: ${req.time}</div>
+    <div class="info">📡 Status: ${req.status}</div>
+    <div class="info">🚨 Severity: ${req.severity}</div>
+
+    <button onclick="accept(${req.id})">Accept 🚑</button>
+    <button class="secondary" onclick="reject(${req.id})">Reject ❌</button>
+
+</div>
+`;
+
+});
+
+}
+
+/////////////////////////////////////////////////////
+// 🚑 ACCEPT
+/////////////////////////////////////////////////////
+
+function accept(id){
+
+let requests = JSON.parse(localStorage.getItem("embo_requests"));
+
+let selected = requests.find(r => r.id === id);
+
+selected.status = "Accepted 🚑";
+
+localStorage.setItem("embo_driver_current", JSON.stringify(selected));
+
+window.location.href = "driver-map.html";
+
+}
+
+/////////////////////////////////////////////////////
+// ❌ REJECT
+/////////////////////////////////////////////////////
+
+function reject(id){
+
+let requests = JSON.parse(localStorage.getItem("embo_requests"));
+
+requests = requests.filter(r => r.id !== id);
+
+localStorage.setItem("embo_requests", JSON.stringify(requests));
+
+loadRequests();
+
+}
+
+/////////////////////////////////////////////////////
+// 🚀 INIT
+/////////////////////////////////////////////////////
+
+loadRequests();
+
+</script>
+
+</body>
+</html>
